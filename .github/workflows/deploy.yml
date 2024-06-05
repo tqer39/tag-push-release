@@ -1,0 +1,60 @@
+---
+name: Deploy Workflow
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v**"
+  workflow_dispatch:
+    inputs:
+      env:
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - stg
+          - prod
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  # env: dev
+  deploy_dev:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.env == 'dev') || (github.event_name == 'push' && github.ref_type == 'branch' && github.ref_name == 'develop') }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - name: echo dev
+        run: echo "dev"
+
+  # env: stg
+  deploy_stg:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.env == 'stg') || (github.event_name == 'push' && github.ref_type == 'branch' && startsWith(github.ref_name, 'release-v')) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - name: echo stg
+        run: echo "stg"
+
+  # env: prod
+  deploy_prod:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.env == 'prod') || (github.event_name == 'push' && github.ref_type == 'tag' && startsWith(github.ref_name, 'v')) }}
+    environment:
+      name: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - name: echo prod
+        run: echo "prod"
